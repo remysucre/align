@@ -13,6 +13,9 @@ mutants = 1000
 gapd :: Int
 gapd = 4
 
+gapsw :: Int
+gapsw = 8
+
 f :: Int -> [String] -> [String] -> Tab -> Int -> Int -> (Int, [(String, String)])
 f d x y t = trace ("aligning " ++ concat (take 10 y) ++ "...") f_
   where f_ = Memo.memo2 Memo.integral Memo.integral f'
@@ -29,6 +32,26 @@ f d x y t = trace ("aligning " ++ concat (take 10 y) ++ "...") f_
                         [ (fd + score (x !! (i-1)) (y !! (j-1)) t, (a, b):ad)
                         , (fl - d, (a, "_"):al)
                         , (fu - d, ("_", b):au)]
+
+fsw :: Int -> [String] -> [String] -> Tab -> Int -> Int -> ((Int, [(String, String)]), (Int, [(String, String)]))
+fsw d x y t = trace ("aligning " ++ concat (take 10 y) ++ "...") f_
+  where f_ = Memo.memo2 Memo.integral Memo.integral f'
+          where
+            f' 0 _ = ((0, []), (0, []))
+            f' _ 0 = ((0, []), (0, []))
+            f' i j = let ((fd, ad), bestd) = f_ (i-1) (j-1)
+                         ((fl, al), bestl) = f_ (i-1) j
+                         ((fu, au), bestu) = f_ i (j-1)
+                         (a, b) = (x !! (i-1), y !! (j-1))
+                         better (fx, _) (fy, _) = compare fx fy
+                         bests = [bestd, bestl, bestu]
+                         ans = maximumBy better
+                               [ (0, [])
+                               , (fd + score (x !! (i-1)) (y !! (j-1)) t, (a, b):ad)
+                               , (fl - d, (a, "_"):al)
+                               , (fu - d, ("_", b):au)]
+                         best = maximumBy better (ans : bests)
+                     in (ans, best)
 
 outter :: [a] -> [a] -> [(a, a)]
 outter xs = concatMap (\y -> zip (repeat y) xs)
@@ -49,7 +72,11 @@ someFunc = do
   let res = map (\(l, r) -> f gapd (tolist l) (tolist r) tab (length l) (length r)) pairs
   _ <- mapM printAlignment res
   pvals <- mapM (\(l, r) -> pval (tolist l) (tolist r) tab) pairs
-  print pvals
+  -- print pvals
+  let locx = tolist "SRGMIEVGNQWT"
+      locy = tolist "RGMVVGRW"
+      (_, ans) = fsw gapsw locx locy tab (length locx) (length locy)
+  printAlignment ans
   print "DONE"
 
 pval :: [String] -> [String] -> Tab -> IO Double
