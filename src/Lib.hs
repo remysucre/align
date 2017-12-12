@@ -3,7 +3,7 @@
 module Lib where
 import qualified Data.MemoCombinators as Memo
 import Data.List
-import Debug.Trace
+-- import Debug.Trace
 
 type Tab = [(String, [(String, Int)])]
 
@@ -41,16 +41,22 @@ someFunc = do
       tab = map (match cs) rs
       x = (tolist "DEADLY")
       y = (tolist "DDGEARLYK")
-      (s, alignment) = f 4 y x tab (length y) (length x)
-  print s
-  print . unzip . reverse $ alignment
+      dead = f 4 y x tab (length y) (length x)
+  printAlignment dead
   let (_, try) = f 4 (tolist hbb_human) (tolist insl3_human) tab (length hbb_human) (length insl3_human)
       (a, b) = unzip . reverse $ try
   print $ concat a
   print $ concat b
-  -- let res = map (\(a, b) -> f 4 (tolist a) (tolist b) tab (length a) (length b)) pairs
-  -- print res
+  let res = map (\(l, r) -> f 4 (tolist l) (tolist r) tab (length l) (length r)) pairs
+  _ <- sequence $ map printAlignment res
   print "DONE"
+
+printAlignment :: (Int, [(String, String)]) -> IO()
+printAlignment (s, a) = do
+  print s
+  let (x, y) = unzip . reverse $ a
+  print $ concat x
+  print $ concat y
 
 tolist :: String -> [String]
 tolist cs = map (\c -> [c]) cs
