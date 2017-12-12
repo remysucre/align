@@ -1,21 +1,20 @@
-{-# LANGUAGE BangPatterns #-}
-
 module Lib where
 import qualified Data.MemoCombinators as Memo
 import Data.List
--- import Debug.Trace
+import System.Random.Shuffle
+import Control.Monad
+import Debug.Trace
 
 type Tab = [(String, [(String, Int)])]
 
-fib :: Int -> Int
-fib = Memo.integral fib'
-    where
-    fib' 0 = 0
-    fib' 1 = 1
-    fib' n = fib (n-1) + fib (n-2)
+mutants :: Int
+mutants = 1000
+
+gapd :: Int
+gapd = 4
 
 f :: Int -> [String] -> [String] -> Tab -> Int -> Int -> (Int, [(String, String)])
-f d x y t = f_
+f d x y t = trace ("aligning " ++ concat (take 10 y) ++ "...") f_
   where f_ = Memo.memo2 Memo.integral Memo.integral f'
           where
             f' 0 0 = (0, [])
@@ -32,24 +31,33 @@ f d x y t = f_
                         , (fu - d, ("_", b):au)]
 
 outter :: [a] -> [a] -> [(a, a)]
-outter xs ys = concat $ map (\y -> zip (repeat y) xs) ys
+outter xs = concatMap (\y -> zip (repeat y) xs)
 
 someFunc :: IO ()
 someFunc = do
   fc <- readFile "BLOSUM62.txt"
-  let (cs):rs = map words $ lines fc
+  let cs:rs = map words $ lines fc
       tab = map (match cs) rs
-      x = (tolist "DEADLY")
-      y = (tolist "DDGEARLYK")
-      dead = f 4 y x tab (length y) (length x)
+      x = tolist "DEADLY"
+      y = tolist "DDGEARLYK"
+      dead = f gapd y x tab (length y) (length x)
   printAlignment dead
-  let (_, try) = f 4 (tolist hbb_human) (tolist insl3_human) tab (length hbb_human) (length insl3_human)
+  let (_, try) = f gapd (tolist hbb_human) (tolist insl3_human) tab (length hbb_human) (length insl3_human)
       (a, b) = unzip . reverse $ try
   print $ concat a
   print $ concat b
-  let res = map (\(l, r) -> f 4 (tolist l) (tolist r) tab (length l) (length r)) pairs
-  _ <- sequence $ map printAlignment res
+  let res = map (\(l, r) -> f gapd (tolist l) (tolist r) tab (length l) (length r)) pairs
+  _ <- mapM printAlignment res
+  pvals <- mapM (\(l, r) -> pval (tolist l) (tolist r) tab) pairs
+  print pvals
   print "DONE"
+
+pval :: [String] -> [String] -> Tab -> IO Double
+pval xs ys tab = do
+  perms <- replicateM mutants $ shuffleM ys
+  let (sperms, _) = unzip $ map (\p -> f gapd xs p tab (length xs) (length p)) perms
+      (sal, _) = f gapd xs ys tab (length xs) (length ys)
+  return $ fromIntegral (length (filter (> sal) sperms)) / fromIntegral (length sperms)
 
 printAlignment :: (Int, [(String, String)]) -> IO()
 printAlignment (s, a) = do
@@ -59,7 +67,7 @@ printAlignment (s, a) = do
   print $ concat y
 
 tolist :: String -> [String]
-tolist cs = map (\c -> [c]) cs
+tolist = map (: [])
 
 match :: [String] -> [String] -> (String, [(String, Int)])
 match cs (a:ss) =
