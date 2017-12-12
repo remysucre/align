@@ -21,7 +21,8 @@ gapd = 4
 gapsw :: Int
 gapsw = 8
 
--- NW algorithm
+-- NW algorithm: no tables needed, directly implement the recursion scheme
+-- and dynamic programming comes for free with automatic memoization
 
 f :: Int -> [String] -> [String] -> Tab -> Int -> Int -> (Int, [(String, String)])
 f d x y t = trace ("aligning " ++ concat (take 10 y) ++ "...") f_
