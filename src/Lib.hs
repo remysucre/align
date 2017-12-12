@@ -65,6 +65,8 @@ someFunc = do
       y = tolist "DDGEARLYK"
       dead = f gapd y x tab (length y) (length x)
   printAlignment dead
+  deadp <- pval y x tab
+  print deadp
   let (_, try) = f gapd (tolist hbb_human) (tolist insl3_human) tab (length hbb_human) (length insl3_human)
       (a, b) = unzip . reverse $ try
   print $ concat a
@@ -72,7 +74,7 @@ someFunc = do
   let res = map (\(l, r) -> f gapd (tolist l) (tolist r) tab (length l) (length r)) pairs
   _ <- mapM printAlignment res
   pvals <- mapM (\(l, r) -> pval (tolist l) (tolist r) tab) pairs
-  -- print pvals
+  print pvals
   let locx = tolist "SRGMIEVGNQWT"
       locy = tolist "RGMVVGRW"
       (_, ans) = fsw gapsw locx locy tab (length locx) (length locy)
